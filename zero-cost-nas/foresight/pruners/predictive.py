@@ -108,7 +108,7 @@ def find_measures(net_orig,                  # neural network
 
     measures = {}
     for k,v in measures_arr.items():
-        if k in ['jacob_cov', 'var', 'cor', 'norm', 'meco', 'zico']:
+        if k in ['jacob_cov', 'meco', 'zico']:
             measures[k] = v
         else:
             measures[k] = sum_arr(v)
