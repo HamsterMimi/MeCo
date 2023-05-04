@@ -223,12 +223,11 @@ def main():
                 else:
                     #score =  score_loop(network, None, train_queue, args.gpu, None, args.proj_crit)
                     network.requires_feature = False
-                    else:
-                        measures = predictive.find_measures(network,
-                                                            train_queue,
-                                                            ('random', 1, n_classes),
-                                                            torch.device("cuda"),
-                                                            measure_names=[args.proj_crit])
+                    measures = predictive.find_measures(network,
+                                                        train_queue,
+                                                        ('random', 1, n_classes),
+                                                        torch.device("cuda"),
+                                                        measure_names=[args.proj_crit])
 
 
 

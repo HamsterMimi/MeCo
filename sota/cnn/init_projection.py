@@ -96,12 +96,11 @@ def project_op(model, input, target, args, cell_type, proj_queue=None, selected_
 
             model.candidate_flags[cell_type][selected_eid] = False
             # print(model.get_projected_weights())
-            else:
-                measures = predictive.find_measures(model,
-                                                    proj_queue,
-                                                    ('random', 1, n_classes),
-                                                    torch.device("cuda"),
-                                                    measure_names=[proj_crit])
+            measures = predictive.find_measures(model,
+                                                proj_queue,
+                                                ('random', 1, n_classes),
+                                                torch.device("cuda"),
+                                                measure_names=[proj_crit])
 
             # print(measures)
             for idx in range(num_ops):
