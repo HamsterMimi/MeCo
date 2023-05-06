@@ -59,10 +59,6 @@ cd exp_scripts
 bash zerocostpt_darts_pipline.sh --metric [metric] --batch_size [batch_size] --seed [seed] --space [s1-s4]
 ````
 
-You can run our Zero-Cost-PT with the following script:
-```
-bash zerocostpt_nb201_pipeline.sh --seed [SEED]
-```
 ## Reference
 
 Our code is based on [Zero-Cost-PT](https://github.com/zerocostptnas/zerocost_operation_score) and [Zero-Cost-NAS](https://github.com/SamsungLabs/zero-cost-nas).
