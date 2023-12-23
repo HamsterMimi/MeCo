@@ -62,3 +62,21 @@ bash zerocostpt_darts_pipline.sh --metric [metric] --batch_size [batch_size] --s
 ## Reference
 
 Our code is based on [Zero-Cost-PT](https://github.com/zerocostptnas/zerocost_operation_score) and [Zero-Cost-NAS](https://github.com/SamsungLabs/zero-cost-nas).
+
+
+## Cite
+
+If the code is found useful, we would appreciate it if our paper could be cited with the following Bibtex format
+
+```
+@inproceedings{
+jiang2023meco,
+title={MeCo: Zero-Shot {NAS} with One Data and Single Forward Pass via Minimum Eigenvalue of Correlation},
+author={Tangyu Jiang and Haodi Wang and Rongfang Bie},
+booktitle={Thirty-seventh Conference on Neural Information Processing Systems},
+year={2023},
+url={https://openreview.net/forum?id=KFm2lZiI7n}
+}
+```
+
+For any inquiries, bugs, and assistance on building and running the code, please contact me at jty@mail.bnu.edu.cn
