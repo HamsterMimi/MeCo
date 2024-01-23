@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="ProjectRootManager" version="2" project-jdk-name="Remote Python 3.8.16 (sftp://ubuntu@172.16.214.100:7712/jty/anaconda3/envs/meco/bin/python3.8)" project-jdk-type="Python SDK" />
+  <component name="Black">
+    <option name="sdkName" value="Remote Python 3.8.16 (sftp://jty@172.16.214.99:7712/jty/anaconda3/envs/zero-cost-nas/bin/python3.8)" />
+  </component>
+  <component name="ProjectRootManager" version="2" project-jdk-name="Remote Python 3.8.16 (sftp://jty@172.16.214.99:7712/jty/anaconda3/envs/zero-cost-nas/bin/python3.8)" project-jdk-type="Python SDK" />
 </project>

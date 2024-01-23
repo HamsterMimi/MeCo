@@ -11,24 +11,60 @@ from models import get_cell_based_tiny_net
 import pickle
 
 
+def get_score(net, x, device, measure='meco'):
+    result_list = []
+
+    def forward_hook(module, data_input, data_output):
+        fea = data_output[0].clone().detach()
+        n = torch.tensor(fea.shape[0])
+        fea = fea.reshape(n, -1)
+        if measure == 'meco':
+            corr = torch.corrcoef(fea)
+            corr[torch.isnan(corr)] = 0
+            corr[torch.isinf(corr)] = 0
+            values = torch.linalg.eig(corr)[0]
+            result = torch.min(torch.real(values))
+        elif measure == 'meco_opt':
+            idxs = random.sample(range(n), 8)
+            fea = fea[idxs, :]
+            corr = torch.corrcoef(fea)
+            corr[torch.isnan(corr)] = 0
+            corr[torch.isinf(corr)] = 0
+            values = torch.linalg.eig(corr)[0]
+            result = torch.min(torch.real(values)) * n / 8
+        result_list.append(result)
+    for name, modules in net.named_modules():
+        modules.register_forward_hook(forward_hook)
+    x = x.to(device)
+    net(x)
+    results = torch.tensor(result_list)
+    results = results[torch.logical_not(torch.isnan(results))]
+    results = results[torch.logical_not(torch.isinf(results))]
+    res = torch.sum(results)
+    result_list.clear()
+
+    return res.item()
+
 def get_num_classes(args):
     return 100 if args.dataset == 'cifar100' else 10 if args.dataset == 'cifar10' else 120
 
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Zero-cost Metrics for NAS-Bench-201')
-    parser.add_argument('--api_loc', default='../data/NAS-Bench-201-v1_0-e61699.pth',
-                        type=str, help='path to API')
+    # parser.add_argument('--api_loc', default='../data/NAS-Bench-201-v1_0-e61699.pth',
+    #                     type=str, help='path to API')
     parser.add_argument('--outdir', default='./',
                         type=str, help='output directory')
+    parser.add_argument('--search_space', type=str, default='tss', choices=['tss', 'sss'])
     parser.add_argument('--init_w_type', type=str, default='none',
                         help='weight initialization (before pruning) type [none, xavier, kaiming, zero, one]')
     parser.add_argument('--init_b_type', type=str, default='none',
                         help='bias initialization (before pruning) type [none, xavier, kaiming, zero, one]')
-    parser.add_argument('--batch_size', default=64, type=int)
-    parser.add_argument('--dataset', type=str, default='ImageNet16-120',
+    parser.add_argument('--measure', type=str, default='meco', choices=['meco', 'meco_opt'])
+    parser.add_argument('--batch_size', default=1, type=int)
+    parser.add_argument('--dataset', type=str, default='cifar10',
                         help='dataset to use [cifar10, cifar100, ImageNet16-120]')
-    parser.add_argument('--gpu', type=int, default=5, help='GPU index to work on')
+    parser.add_argument('--gpu', type=int, default=0, help='GPU index to work on')
     parser.add_argument('--data_size', type=int, default=32, help='data_size')
     parser.add_argument('--num_data_workers', type=int, default=2, help='number of workers for dataloaders')
     parser.add_argument('--dataload', type=str, default='appoint', help='random, grasp, appoint supported')
@@ -49,11 +85,9 @@ if __name__ == '__main__':
     args = parse_arguments()
     print(args.device)
 
-    if args.noacc:
-        api = pickle.load(open(args.api_loc,'rb'))
-    else:
-        from nas_201_api import NASBench201API as API
-        api = API(args.api_loc)
+    from nats_bench import create
+
+    api = create(None, args.search_space, fast_mode=True, verbose=False)
 
     torch.manual_seed(args.seed)
     torch.backends.cudnn.deterministic = True
@@ -61,9 +95,6 @@ if __name__ == '__main__':
 
     train_loader, val_loader = get_cifar_dataloaders(args.batch_size, args.batch_size, args.dataset, args.num_data_workers, resize=args.data_size)
     x, y = next(iter(train_loader))
-    # random data
-    # x = torch.rand((args.batch_size, 3, args.data_size, args.data_size))
-    # y = 0
 
     cached_res = []
     pre = 'cf' if 'cifar' in args.dataset else 'im'
@@ -81,7 +112,6 @@ if __name__ == '__main__':
             break
 
         res = {'i': i, 'arch': arch_str}
-        # print(arch_str)
         if args.search_space == 'tss':
             net = nasbench2.get_model_from_arch_str(arch_str, get_num_classes(args))
             arch_str2 = nasbench2.get_arch_str_from_model(net)
@@ -91,21 +121,22 @@ if __name__ == '__main__':
                 raise ValueError
         elif args.search_space == 'sss':
             config = api.get_net_config(i, args.dataset)
-            # print(config)
             net = get_cell_based_tiny_net(config)
         net.to(args.device)
-        # print(net)
 
         init_net(net, args.init_w_type, args.init_b_type)
 
-        # print(x.size(), y)
-        measures = get_score(net, x, i, args.device)
+        measures = get_score(net, x, args.device, measure=args.measure)
 
-        res['meco'] = measures
+        res[f'{args.measure}'] = measures
 
         if not args.noacc:
-            info = api.get_more_info(i, 'cifar10-valid' if args.dataset == 'cifar10' else args.dataset, iepoch=None,
-                                     hp='200', is_random=False)
+            if args.search_space == 'tss':
+                info = api.get_more_info(i, 'cifar10-valid' if args.dataset == 'cifar10' else args.dataset, iepoch=None,
+                                         hp='200', is_random=False)
+            else:
+                info = api.get_more_info(i, 'cifar10-valid' if args.dataset == 'cifar10' else args.dataset, iepoch=None,
+                                         hp='90', is_random=False)
 
             trainacc = info['train-accuracy']
             valacc = info['valid-accuracy']
