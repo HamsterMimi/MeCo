@@ -1,14 +1,11 @@
 import argparse
-import os
-
-import time
+import pickle
+import random
 
 from foresight.dataset import *
 from foresight.models import nasbench2
-from foresight.pruners import predictive
 from foresight.weight_initializers import init_net
 from models import get_cell_based_tiny_net
-import pickle
 
 
 def get_score(net, x, device, measure='meco'):
